@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Photo Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+
+    <!-- Gallery Container -->
+    <div class="relative w-full max-w-5xl aspect-[4/3] md:aspect-[16/9] flex items-center justify-center">
+        
+        <!-- Loading Spinner (Hidden when image loads) -->
+        <div id="loader" class="absolute inset-0 flex items-center justify-center z-0">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+
+        <!-- Main Image Display -->
+        <div class="relative w-full h-full flex items-center justify-center z-10">
+            <img 
+                id="mainImage" 
+                src="" 
+                alt="Gallery Photo" 
+                class="max-w-full max-h-full object-contain rounded-xl shadow-2xl fade-in"
+                onload="document.getElementById('loader').classList.add('hidden')"
+            >
+        </div>
+
+        <!-- Navigation Overlay (Desktop) -->
+        <button onclick="prevPhoto()" class="absolute left-4 z-20 p-3 rounded-full glass-panel hover:bg-white/20 transition-all hidden md:block">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button onclick="nextPhoto()" class="absolute right-4 z-20 p-3 rounded-full glass-panel hover:bg-white/20 transition-all hidden md:block">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+    </div>
+
+    <!-- Controls & Info -->
+    <div class="mt-8 flex flex-col items-center gap-4 w-full max-w-md">
+        <div class="flex items-center gap-6">
+            <!-- Mobile Controls -->
+            <button onclick="prevPhoto()" class="md:hidden p-4 rounded-xl glass-panel active:scale-95 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            
+            <div class="text-center">
+                <h1 id="imageName" class="text-lg font-medium text-zinc-300 truncate w-48">Loading...</h1>
+                <p id="counter" class="text-sm text-zinc-500 font-mono mt-1">0 / 0</p>
+            </div>
+
+            <button onclick="nextPhoto()" class="md:hidden p-4 rounded-xl glass-panel active:scale-95 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="progressBar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+        </div>
+        
+        <p class="text-xs text-zinc-600 uppercase tracking-widest mt-2">Use Arrow Keys to Navigate</p>
+    </div>
+
+    <script>
+        /**
+         * CONFIGURATION
+         * Add the names of your photo files here.
+         * These files must be inside a folder named 'images' in your repository.
+         */
+        const photoFiles = [
+            "photo1.jpg",
+            "photo2.jpg",
+            "vacation.png",
+            "landscape.webp"
+        ];
+
+        let currentIndex = 0;
+        const imgPath = "images/"; // Folder name
+        
+        const mainImage = document.getElementById('mainImage');
+        const counterText = document.getElementById('counter');
+        const nameText = document.getElementById('imageName');
+        const progressBar = document.getElementById('progressBar');
+        const loader = document.getElementById('loader');
+
+        function updateGallery() {
+            // Show loader
+            loader.classList.remove('hidden');
+            
+            const currentFileName = photoFiles[currentIndex];
+            const fullUrl = imgPath + currentFileName;
+
+            // Reset animation
+            mainImage.classList.remove('fade-in');
+            void mainImage.offsetWidth; // Trigger reflow
+            mainImage.classList.add('fade-in');
+
+            // Update DOM
+            mainImage.src = fullUrl;
+            nameText.innerText = currentFileName;
+            counterText.innerText = `${currentIndex + 1} / ${photoFiles.length}`;
+            
+            // Update Progress Bar
+            const progress = ((currentIndex + 1) / photoFiles.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function nextPhoto() {
+            currentIndex = (currentIndex + 1) % photoFiles.length;
+            updateGallery();
+        }
+
+        function prevPhoto() {
+            currentIndex = (currentIndex - 1 + photoFiles.length) % photoFiles.length;
+            updateGallery();
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowRight") nextPhoto();
+            if (e.key === "ArrowLeft") prevPhoto();
+        });
+
+        // Touch Swiping Support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) nextPhoto();
+            if (touchEndX - touchStartX > 50) prevPhoto();
+        });
+
+        // Start
+        if (photoFiles.length > 0) {
+            updateGallery();
+        } else {
+            nameText.innerText = "No photos found";
+            loader.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
